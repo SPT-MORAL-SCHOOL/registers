@@ -569,11 +569,11 @@
                 const targetDateOnly = formatDateOnly(targetDate);
                 const targetTimeOnly = formatTimeOnly(targetDate);
 
-                targetMsgEl.innerHTML = `ระบบจะ**${action}**ในวันที่ <span class="font-medium text-red-900">${targetDateOnly}</span> เวลา <span class="font-medium text-red-900">${targetTimeOnly}</span> น.`;
+                targetMsgEl.innerHTML = `ระบบจะ${action}ในวันที่ <span class="font-medium text-red-900">${targetDateOnly}</span> เวลา <span class="font-medium text-red-900">${targetTimeOnly}</span> น.`;
                 displayEl.textContent = formatCountdown(msRemaining);
                 
                 // Adjust the default message to reflect the automated status
-                defaultMsgEl.textContent = `ระบบกำลังนับถอยหลังสู่การ${action}อัตโนมัติ`;
+                defaultMsgEl.textContent = `โปรดติดตามประกาศของโรงเรียนคุณธรรม สพฐ. โรงเรียนสตรีพัทลุง หรือติดต่อผู้ดูแลระบบหากมีข้อสงสัย`;
                 
                 show(countdownMsgEl);
             } else {
