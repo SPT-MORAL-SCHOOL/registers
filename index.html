@@ -1,0 +1,1463 @@
+
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ระบบรับสมัครนักเรียนแกนนำ • โรงเรียนสตรีพัทลุง</title>
+      <link rel="icon" type="image/png" href="favicon.PNG"> 
+    
+    <link rel="shortcut icon" type="image/x-icon" href="favicon.ico"> 
+
+    <link rel="apple-touch-icon" href="apple-touch-icon.PNG">
+    
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.PNG">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Noto Sans Thai', 'ui-sans-serif', 'system-ui'] },
+          colors: {
+            primary: {50:'#eef9fb',100:'#d6f1f7',200:'#b0e3ee',300:'#83cfe0',400:'#54b6ce',500:'#359db7',600:'#2a7f98',700:'#25687d',800:'#235767',900:'#1f4957'}
+          },
+          boxShadow: { glow: '0 10px 30px rgba(53,157,183,0.25)' }
+        }
+      }
+    }
+  </script>
+  <style>
+    body{ background:#ffffff; }
+    .tab-btn{ color:#111827; }
+    .tab-active{ background:#f3f4f6; border:1px solid #d1d5db; color:#111827; box-shadow:0 6px 14px rgba(0,0,0,.08); }
+    .input{ background:#ffffff; border:1px solid #d1d5db; transition:all .2s; }
+    .input:focus{ border-color:#54b6ce; box-shadow:0 0 0 4px rgba(83,207,224,.15); outline:none; }
+    .btn{ box-shadow:0 6px 14px rgba(0,0,0,.08); transition:transform .05s, box-shadow .2s, background .2s, opacity .2s; }
+    .btn:hover{ box-shadow:0 12px 24px rgba(0,0,0,.12); }
+    .btn:active{ transform:translateY(1px); }
+    .table-wrap{ overflow:auto; }
+  </style>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+</head>
+<body class="font-sans text-gray-900">
+  <div class="max-w-6xl mx-auto px-4 py-8 md:py-12">
+    <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+      <div class="flex items-center gap-4">
+        <div class="w-16 h-16 rounded-2xl overflow-hidden ring-2 ring-black/5 shadow-glow flex items-center justify-center bg-white">
+          <img src="https://img5.pic.in.th/file/secure-sv1/IMG_25650953161d1c1bbdd8.jpeg"
+               alt="โลโก้โรงเรียนสตรีพัทลุง"
+               class="w-full h-full object-cover"
+               onerror="this.src=''; this.alt='Image failed to load'; this.style.display='none';">
+        </div>
+        <div>
+          <h1 class="text-2xl md:text-3xl font-bold leading-tight">ระบบรับสมัครนักเรียนแกนนำ โรงเรียนคุณธรรม สพฐ.</h1>
+          <p class="text-gray-500">โรงเรียนสตรีพัทลุง • SPT MORAL SCHOOL</p>
+        </div>
+      </div>
+      <div class="flex gap-2 items-center">
+        <span id="systemStatusBadge" class="px-3 py-1 rounded-full text-sm ring-1">กำลังโหลดสถานะ...</span>
+      </div>
+    </header>
+
+    <nav class="mt-8 bg-white ring-1 ring-black/10 rounded-2xl p-2 flex flex-wrap gap-2 shadow-lg">
+      <button type="button" data-tab="apply" class="tab-btn tab-active px-5 py-3 rounded-xl btn hover:bg-gray-100">หน้ารับสมัคร</button>
+      <button type="button" data-tab="check-status" class="tab-btn px-5 py-3 rounded-xl btn hover:bg-gray-100">ตรวจสอบการสมัคร</button>
+      <button type="button" data-tab="admin" class="tab-btn px-5 py-3 rounded-xl btn hover:bg-gray-100">ผู้ดูแล</button>
+    </nav>
+
+    <section id="tab-apply" class="mt-6 rounded-2xl p-6 md:p-8 bg-white ring-1 ring-black/10 shadow-lg">
+      <div class="flex items-start gap-4 justify-between flex-wrap">
+        <div>
+          <h2 class="text-xl md:text-2xl font-semibold">แบบฟอร์มสมัครนักเรียนแกนนำ</h2>
+          <p class="text-gray-600">กรอกข้อมูลให้ครบถ้วน แล้วกดส่งสมัคร</p>
+        </div>
+        <div class="px-3 py-2 rounded-xl text-sm ring-1 ring-dashed ring-black/10">รับห้องละ 5 คน</div>
+      </div>
+
+      <div id="loadingStatusMessage" class="mt-6 p-6 rounded-xl bg-gray-50 text-gray-700 ring-1 ring-gray-200">
+        <p class="text-lg font-semibold flex items-center gap-2">
+          <svg class="animate-spin h-5 w-5 text-primary-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          กำลังโหลดสถานะระบบ...
+        </p>
+        <p class="mt-2 text-sm">โปรดรอสักครู่ในขณะที่ระบบกำลังตรวจสอบสถานะการเปิด/ปิดรับสมัคร</p>
+      </div>
+      
+      <div id="regisClosedMessage" class="mt-6 hidden">
+        <div class="p-6 rounded-xl bg-red-50 ring-1 ring-red-200 text-red-800">
+          <p class="font-semibold text-lg">⚠️ ระบบรับสมัครปิดอยู่</p>
+          
+          <div id="countdownMessage" class="mt-3 hidden">
+            <p class="text-sm text-red-700" id="targetMessage">...</p>
+            
+            <div class="mt-3 p-3 rounded-xl bg-red-100 text-red-900 text-center text-xl font-bold">
+              <span id="countdownDisplay">...</span>
+            </div>
+          </div>
+          <p class="mt-2 text-sm" id="defaultClosedMessage">โปรดติดตามประกาศของโรงเรียนคุณธรรม สพฐ. โรงเรียนสตรีพัทลุง หรือติดต่อผู้ดูแลระบบหากมีข้อสงสัย</p>
+        </div>
+      </div>
+      <form id="applyForm" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 hidden" autocomplete="off"> 
+        <div>
+          <label class="block mb-2">ระดับชั้น</label>
+          <select id="grade" class="w-full input rounded-xl px-4 py-3" required>
+            <option value="">— เลือกระดับชั้น —</option>
+            <option>ม.1</option><option>ม.2</option><option>ม.3</option>
+            <option>ม.4</option><option>ม.5</option><option>ม.6</option>
+          </select>
+        </div>
+        <div>
+          <label class="block mb-2">ห้อง</label>
+          <select id="room" class="w-full input rounded-xl px-4 py-3" required></select>
+        </div>
+        <div>
+          <label class="block mb-2">คำนำหน้าชื่อ</label>
+          <select id="prefix" class="w-full input rounded-xl px-4 py-3" required>
+            <option value="">— เลือกคำนำหน้า —</option>
+            <option>เด็กชาย</option><option>เด็กหญิง</option><option>นาย</option><option>นางสาว</option>
+          </select>
+        </div>
+        <div>
+          <label class="block mb-2">ชื่อ</label>
+          <input id="firstName" class="w-full input rounded-xl px-4 py-3" placeholder="เช่น กิตติ" required />
+        </div>
+        <div>
+          <label class="block mb-2">นามสกุล</label>
+          <input id="lastName" class="w-full input rounded-xl px-4 py-3" placeholder="เช่น สุขใจ" required />
+        </div>
+        <div>
+          <label class="block mb-2">ชื่อเล่น</label>
+          <input id="nickname" class="w-full input rounded-xl px-4 py-3" placeholder="เช่น โฟกัส" required />
+        </div>
+
+        <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block mb-2">รหัสนักเรียน 5 หลัก</label>
+            <input id="studentId" type="text" inputmode="numeric" class="w-full input rounded-xl px-4 py-3" placeholder="เช่น 12345" pattern="^[0-9]{5}$" maxlength="5" required />
+          </div>
+          <div>
+            <label class="block mb-2">หมายเลขโทรศัพท์</label>
+            <input id="phone" type="tel" class="w-full input rounded-xl px-4 py-3" placeholder="เช่น 08xxxxxxxx" pattern="^[0-9]{9,10}$" required />
+          </div>
+        </div>
+        <div class="md:col-span-2 flex items-center justify-between mt-2">
+          <div class="text-gray-600 text-sm">ข้อมูลของคุณจะถูกบันทึกลงฐานข้อมูลอย่างปลอดภัย</div>
+          <button id="submitBtn" class="btn bg-primary-600 hover:bg-primary-500 active:bg-primary-700 text-white px-6 py-3 rounded-xl shadow-glow flex items-center gap-2">
+            <span>ส่งข้อมูลสมัคร</span>
+          </button>
+        </div>
+      </form>
+      <div id="applyMessage" class="mt-4 hidden"></div>
+    </section>
+
+    <section id="tab-check-status" class="mt-6 rounded-2xl p-6 md:p-8 hidden bg-white ring-1 ring-black/10 shadow-lg">
+      <div class="flex items-start gap-4 justify-between flex-wrap">
+        <div>
+          <h2 class="text-xl md:text-2xl font-semibold">ตรวจสอบสถานะการสมัคร</h2>
+          <p class="text-gray-600">กรอกรหัสนักเรียน 5 หลัก เพื่อตรวจสอบผลการสมัคร</p>
+        </div>
+        <div class="px-3 py-2 rounded-xl text-sm bg-primary-50 text-primary-800 ring-1 ring-primary-200">ค้นหาได้ทันที</div>
+      </div>
+
+      <form id="checkStatusForm" class="mt-6 flex flex-col md:flex-row gap-4">
+        <div class="flex-grow">
+          <label class="block mb-2">รหัสนักเรียน 5 หลัก</label>
+          <input id="checkStudentId" type="text" inputmode="numeric" class="w-full input rounded-xl px-4 py-3" placeholder="กรอกรหัสนักเรียน 5 หลัก" pattern="^[0-9]{5}$" maxlength="5" required />
+        </div>
+        <div class="flex flex-col justify-end">
+          <button type="submit" id="checkStatusBtn" class="btn bg-primary-600 hover:bg-primary-500 text-white px-4 py-3 rounded-xl">ตรวจสอบ</button>
+        </div>
+      </form>
+
+      <div id="checkResult" class="mt-6 hidden">
+        <div id="statusFound" class="rounded-xl p-4 bg-primary-50 ring-1 ring-primary-200 hidden">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-primary-100 text-primary-800 flex items-center justify-center ring-2 ring-primary-200">✅</div>
+            <div>
+              <div class="text-lg font-semibold text-primary-800">พบข้อมูลการสมัครของคุณแล้ว!</div>
+              <div class="text-sm text-gray-700">รหัสนักเรียน: <span id="res_studentId" class="font-bold"></span></div>
+            </div>
+          </div>
+          <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <div class="text-gray-500">ชื่อ-สกุล</div>
+              <div class="font-medium" id="res_fullName"></div>
+            </div>
+            <div>
+              <div class="text-gray-500">ชื่อเล่น</div>
+              <div class="font-medium" id="res_nickname"></div>
+            </div>
+            <div>
+              <div class="text-gray-500">ระดับชั้น/ห้อง</div>
+              <div class="font-medium" id="res_gradeRoom"></div>
+            </div>
+            <div>
+              <div class="text-gray-500">โทรศัพท์</div>
+              <div class="font-medium" id="res_phone"></div>
+            </div>
+            <div class="col-span-2">
+              <div class="text-gray-500">เวลาที่สมัคร</div>
+              <div class="font-medium" id="res_createdAt"></div>
+            </div>
+          </div>
+        </div>
+        <div id="statusNotFound" class="p-4 rounded-xl bg-red-50 text-red-700 ring-1 ring-red-200 hidden">
+          <p class="font-semibold">ไม่พบข้อมูลการสมัคร</p>
+          <p class="mt-1 text-sm">โปรดตรวจสอบรหัสนักเรียน 5 หลักอีกครั้ง หรือติดต่อผู้ดูแลระบบ</p>
+        </div>
+      </div>
+      <div id="checkEmpty" class="mt-6 text-gray-600">กรุณากรอกรหัสนักเรียนเพื่อตรวจสอบสถานะ</div>
+    </section>
+
+    <section id="tab-admin" class="mt-6 rounded-2xl p-6 md:p-8 hidden bg-white ring-1 ring-black/10 shadow-lg">
+      <div class="flex items-start gap-4 justify-between flex-wrap">
+        <div>
+          <h2 class="text-xl md:text-2xl font-semibold">ผู้ดูแลระบบ</h2>
+          <p class="text-gray-600">เข้าสู่ระบบเพื่อจัดการข้อมูล</p>
+        </div>
+        <div class="px-3 py-2 rounded-xl text-sm ring-1 ring-dashed ring-black/10">เฉพาะผู้ดูแล</div>
+      </div>
+
+      <div id="adminLogin" class="mt-6">
+        <div class="rounded-2xl bg-white text-gray-800 p-6 ring-1 ring-black/10 shadow-lg max-w-md">
+          <h3 class="text-lg font-semibold">เข้าสู่ระบบผู้ดูแล</h3>
+          <form id="loginForm" class="mt-4 grid gap-3" autocomplete="off">
+            <div>
+              <label class="block mb-1 text-sm">อีเมล</label>
+              <input id="loginEmail" type="email" class="w-full rounded-xl border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-400" placeholder="name@domain.com" required />
+            </div>
+            <div>
+              <label class="block mb-1 text-sm">รหัสผ่าน</label>
+              <input id="loginPassword" type="password" class="w-full rounded-xl border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-400" placeholder="รหัสผ่าน" required />
+            </div>
+            <button id="loginBtn" class="btn rounded-xl bg-primary-600 hover:bg-primary-500 text-white px-5 py-3">เข้าสู่ระบบ</button>
+            <div id="loginMsg" class="text-sm text-red-600 mt-1 hidden"></div>
+          </form>
+        </div>
+      </div>
+
+      <div id="adminPanel" class="mt-6 hidden">
+        
+        <div id="adminSummaryTable" class="mb-6 hidden">
+          <h3 class="text-lg font-semibold mb-2">สรุปจำนวนผู้สมัครรายห้อง (รับห้องละ 5 คน)</h3>
+          <div class="table-wrap">
+            <table class="min-w-full text-center bg-white border border-gray-200 rounded-lg shadow-sm">
+              <thead class="bg-gray-50 text-gray-700">
+                <tr id="adminSummaryHeader">
+                  <th class="py-2 px-3 border-r border-gray-200" rowspan="2">ชั้น</th>
+                  </tr>
+                <tr id="adminSummarySubHeader">
+                   </tr>
+              </thead>
+              <tbody id="adminSummaryBody" class="divide-y divide-gray-200">
+                </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="flex items-center justify-between">
+          <div class="text-gray-700" id="adminStatus">กำลังตรวจสอบสิทธิ์...</div>
+          <button id="logoutBtn" class="btn bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 rounded-xl">ออกจากระบบ</button>
+        </div>
+        
+        <div class="mt-6 p-4 rounded-xl bg-gray-50 ring-1 ring-black/10 flex items-center justify-between flex-wrap gap-4">
+          <div id="systemControlStatus" class="text-lg font-semibold text-gray-800">สถานะระบบ: <span class="font-bold text-red-600">กำลังโหลด...</span></div>
+          <button id="toggleSystemBtn" class="btn px-4 py-2 rounded-xl text-white font-medium" disabled>สลับสถานะ</button>
+        </div>
+        
+        <div class="mt-4 p-4 rounded-xl bg-primary-50 ring-1 ring-primary-200">
+            <h3 class="text-base font-semibold text-primary-800 mb-3">ควบคุมการเปิด/ปิดอัตโนมัติ (จะถูกใช้เมื่อปิดด้วยตนเองเท่านั้น)</h3>
+            <div id="autoDateStatus" class="mb-3 text-sm text-gray-600">สถานะช่วงเวลา: ไม่มีกำหนดการ</div>
+
+            <form id="autoControlForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block mb-1 text-sm text-gray-700">วันที่และเวลาเปิดอัตโนมัติ</label>
+                    <input id="autoOpenDateInput" type="datetime-local" class="w-full input rounded-xl px-3 py-2 text-sm" />
+                    <p class="text-xs text-gray-500 mt-1">วันที่และเวลาประเทศไทย (UTC+7)</p>
+                </div>
+                <div>
+                    <label class="block mb-1 text-sm text-gray-700">วันที่และเวลาปิดอัตโนมัติ</label>
+                    <input id="autoCloseDateInput" type="datetime-local" class="w-full input rounded-xl px-3 py-2 text-sm" />
+                    <p class="text-xs text-gray-500 mt-1">วันที่และเวลาประเทศไทย (UTC+7)</p>
+                </div>
+
+                <div class="md:col-span-2 flex flex-col md:flex-row justify-end gap-3 mt-2">
+                    <button id="clearAutoDateBtn" type="button" class="btn px-4 py-2 rounded-xl text-primary-800 font-medium bg-primary-100 hover:bg-primary-200">ล้างวันที่อัตโนมัติ</button>
+                    <button id="saveAutoDateBtn" type="submit" class="btn px-4 py-2 rounded-xl text-white font-medium bg-primary-600 hover:bg-primary-500">บันทึกวันที่อัตโนมัติ</button>
+                </div>
+            </form>
+        </div>
+        <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block mb-2">ค้นหาตามระดับชั้น</label>
+            <select id="adminGrade" class="w-full input rounded-xl px-4 py-3">
+              <option value="">ทั้งหมด</option>
+              <option>ม.1</option><option>ม.2</option><option>ม.3</option>
+              <option>ม.4</option><option>ม.5</option><option>ม.6</option>
+            </select>
+          </div>
+          <div>
+            <label class="block mb-2">ค้นหาตามห้อง</label>
+            <select id="adminRoom" class="w-full input rounded-xl px-4 py-3" disabled>
+              <option value="">ทั้งหมด</option>
+            </select>
+          </div>
+          <div class="flex items-end gap-2">
+            <button id="exportBtn" class="btn w-full bg-primary-50 hover:bg-primary-100 text-primary-800 px-4 py-3 rounded-xl ring-1 ring-primary-200">ส่งออก CSV (ตามตัวกรอง)</button>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-2 mt-4">
+          <button id="loadAllBtn" class="btn bg-primary-600 hover:bg-primary-500 text-white px-4 py-2 rounded-xl">โหลดข้อมูลทั้งหมด</button>
+          <button id="clearAllBtn" class="btn bg-red-600 hover:bg-red-500 active:bg-red-700 text-white px-4 py-2 rounded-xl">ล้างข้อมูลทั้งหมด</button>
+          <button id="exportAllBtn" class="btn bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl">ส่งออก CSV (ทั้งหมด)</button>
+        </div>
+
+        <div class="table-wrap mt-6">
+          <table class="min-w-full text-left">
+            <thead class="text-gray-700">
+              <tr>
+                <th class="py-3 pr-4">รหัส น.</th>
+                <th class="py-3 pr-4">ชั้น</th>
+                <th class="py-3 pr-4">ห้อง</th>
+                <th class="py-3 pr-4">คำนำหน้า</th>
+                <th class="py-3 pr-4">ชื่อ</th>
+                <th class="py-3 pr-4">นามสกุล</th>
+                <th class="py-3 pr-4">ชื่อเล่น</th>
+                <th class="py-3 pr-4">โทรศัพท์</th>
+                <th class="py-3 pr-4">เวลา</th>
+                <th class="py-3 pr-4">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="adminList" class="divide-y divide-gray-200"></tbody>
+          </table>
+        </div>
+        <div id="adminEmpty" class="mt-6 text-gray-600">ยังไม่มีข้อมูลแสดง</div>
+      </div>
+    </section>
+
+    <footer class="mt-10 text-center">
+      <div class="mx-auto max-w-6xl">
+        <div class="rounded-2xl bg-white shadow-lg ring-1 ring-black/5 px-4 py-4 text-gray-700 ">
+           <div class="grid grid-cols-1 gap-y-2 text-sm w-fit mx-auto">
+    <div class="flex items-center space-x-2">
+        <a href="https://spt-moral-school.github.io/terms/#terms" class="text-gray-400 hover:text-purple-400 transition duration-300">ข้อกำหนดการใช้งาน</a>
+        <p class="text-gray-400">|</p>
+        <a href="https://spt-moral-school.github.io/terms/#policy" class="text-gray-400 hover:text-purple-400 transition duration-300">นโยบายความเป็นส่วนตัว</a>
+    </div>
+</div>
+          <div class="text-sm text-center">&copy; 2024 SPT MORAL SCHOOL - โรงเรียนคุณธรรม สพฐ. โรงเรียนสตรีพัทลุง | All Rights Reserved</div>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <div id="editModal" class="fixed inset-0 hidden z-50 items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60"></div>
+    <div class="relative bg-white w-full max-w-2xl rounded-2xl p-6 ring-1 ring-black/10">
+      <div class="flex items-center justify-between">
+        <h3 class="text-xl font-semibold">แก้ไขข้อมูลผู้สมัคร</h3>
+        <button id="closeEditModal" class="btn px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200">ปิด</button>
+      </div>
+      <form id="editForm" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <input type="hidden" id="editId" />
+        <div>
+          <label class="block mb-2">รหัสนักเรียน 5 หลัก</label>
+          <input id="editStudentId" class="w-full input rounded-xl px-4 py-3" pattern="^[0-9]{5}$" maxlength="5" required />
+        </div>
+        <div>
+          <label class="block mb-2">ระดับชั้น</label>
+          <select id="editGrade" class="w-full input rounded-xl px-4 py-3" required>
+            <option>ม.1</option><option>ม.2</option><option>ม.3</option>
+            <option>ม.4</option><option>ม.5</option><option>ม.6</option>
+          </select>
+        </div>
+        <div>
+          <label class="block mb-2">ห้อง</label>
+          <select id="editRoom" class="w-full input rounded-xl px-4 py-3" required></select>
+        </div>
+        <div>
+          <label class="block mb-2">คำนำหน้า</label>
+          <select id="editPrefix" class="w-full input rounded-xl px-4 py-3" required>
+            <option>เด็กชาย</option><option>เด็กหญิง</option><option>นาย</option><option>นางสาว</option>
+          </select>
+        </div>
+        <div>
+          <label class="block mb-2">ชื่อ</label>
+          <input id="editFirstName" class="w-full input rounded-xl px-4 py-3" required />
+        </div>
+        <div>
+          <label class="block mb-2">นามสกุล</label>
+          <input id="editLastName" class="w-full input rounded-xl px-4 py-3" required />
+        </div>
+        <div>
+          <label class="block mb-2">ชื่อเล่น</label>
+          <input id="editNickname" class="w-full input rounded-xl px-4 py-3" required />
+        </div>
+        <div class="md:col-span-2">
+          <label class="block mb-2">โทรศัพท์</label>
+          <input id="editPhone" class="w-full input rounded-xl px-4 py-3" pattern="^[0-9]{9,10}$" required />
+        </div>
+
+        <div class="md:col-span-2 flex justify-end gap-2 mt-2">
+          <button type="button" id="cancelEdit" class="btn px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200">ยกเลิก</button>
+          <button type="submit" class="btn px-5 py-2 rounded-xl bg-primary-600 hover:bg-primary-500 text-white">บันทึกการแก้ไข</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 hidden">
+    <div class="rounded-xl px-4 py-3 shadow-glow text-sm bg-white ring-1 ring-black/10" id="toastText">บันทึกสำเร็จ</div>
+  </div>
+
+  <script>
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDjPKzAY2oyB83jcpXHbBKgK1WZhVmsnHA",
+      authDomain: "spt-students.firebaseapp.com",
+      projectId: "spt-students",
+      storageBucket: "spt-students.firebasestorage.app",
+      messagingSenderId: "814089202848",
+      appId: "1:814089202848:web:450ab56e19491ca7702dc5",
+      measurementId: "G-9DMYJGDR84"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+    const COL = 'applications';
+    const CONFIG_DOC = 'config/system'; 
+    const CAPACITY = 5; 
+    const GRADES = ['ม.1', 'ม.2', 'ม.3', 'ม.4', 'ม.5', 'ม.6']; 
+    const ROOMS = Array.from({length: 12}, (_, i) => String(i + 1)); 
+    const ADMIN_EMAILS = ['sptmorral@spt.ac.th'];
+    
+    // Global flags/vars for system status and time
+    let isSystemOpenManually = false; 
+    let isSystemOpenFinal = false; 
+    let autoOpenDateTarget = null; // Next Auto Open time (Date object)
+    let autoCloseDateTarget = null; // Next Auto Close time (Date object)
+    let serverTimeDelta = 0; // Difference between server time and local machine time (Server - Local)
+    
+    // Helpers
+    const qs = (s, r=document) => r.querySelector(s);
+    const qsa = (s, r=document) => [...r.querySelectorAll(s)];
+    const show = el => el.classList.remove('hidden');
+    const hide = el => el.classList.add('hidden');
+    const setText = (el, t) => { if(el) el.textContent = t; };
+    const toast = (msg) => {
+      const box = qs('#toast'), text = qs('#toastText');
+      if (!box || !text) return;
+      text.textContent = msg; show(box);
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(()=>hide(box), 2200);
+    };
+
+    // Date formatting helpers
+    function formatDate(ts){
+      if (!ts || !ts.toDate) return '-';
+      const d = ts.toDate();
+      // Use 'Asia/Bangkok' for explicit Thai time (UTC+7)
+      return new Intl.DateTimeFormat('th-TH',{
+          dateStyle:'medium', 
+          timeStyle:'short',
+          timeZone: 'Asia/Bangkok'
+      }).format(d);
+    }
+    
+    // Format only date for display (e.g., 20 พ.ย. 2568)
+    function formatDateOnly(date) {
+        if (!date || isNaN(date.getTime())) return '...';
+        return new Intl.DateTimeFormat('th-TH', {
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric',
+            timeZone: 'Asia/Bangkok'
+        }).format(date);
+    }
+
+    // Format only time for display (e.g., 14:30)
+    function formatTimeOnly(date) {
+        if (!date || isNaN(date.getTime())) return '...';
+        return new Intl.DateTimeFormat('th-TH', {
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false,
+            timeZone: 'Asia/Bangkok'
+        }).format(date);
+    }
+
+    function formatDateLocal(date) {
+        if (!date || isNaN(date.getTime())) return '-';
+        // Use 'Asia/Bangkok' for explicit Thai time
+        return new Intl.DateTimeFormat('th-TH',{
+            year: 'numeric', month: 'short', day: 'numeric', 
+            hour: '2-digit', minute: '2-digit', 
+            hour12: false,
+            timeZone: 'Asia/Bangkok'
+        }).format(date);
+    }
+    
+    // Helper to format Date object for input type="datetime-local" (YYYY-MM-DDTHH:mm)
+    function formatForDatetimeLocal(date) {
+        if (!date || isNaN(date.getTime())) return '';
+        
+        const pad = (num) => String(num).padStart(2, '0');
+        
+        // Manual adjustment for UTC+7 display, assuming the Date object is stored in UTC
+        const THAILAND_OFFSET_MS = 7 * 60 * 60 * 1000; 
+        const dateTH = new Date(date.getTime() + THAILAND_OFFSET_MS); 
+
+        const year = dateTH.getUTCFullYear();
+        const month = pad(dateTH.getUTCMonth() + 1);
+        const day = pad(dateTH.getUTCDate());
+        const hours = pad(dateTH.getUTCHours());
+        const minutes = pad(dateTH.getUTCMinutes());
+
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+
+
+    /**
+     * Converts milliseconds into a readable countdown format (DD วัน HH ชม. MM นาที).
+     * @param {number} ms - Milliseconds remaining.
+     * @returns {string} Formatted string.
+     */
+    function formatCountdown(ms) {
+        if (ms < 0) return "00 วัน 00 ชม. 00 นาที";
+        
+        let seconds = Math.floor(ms / 1000);
+        const days = Math.floor(seconds / (3600 * 24));
+        seconds -= days * 3600 * 24;
+        const hours = Math.floor(seconds / 3600);
+        seconds -= hours * 3600;
+        const minutes = Math.floor(seconds / 60);
+        
+        const pad = (n) => String(n).padStart(2, '0');
+        
+        return `${pad(days)} วัน ${pad(hours)} ชม. ${pad(minutes)} นาที`;
+    }
+
+    /**
+     * Updates the countdown display based on the current system time and targets.
+     * [MODIFIED LOGIC] Focus on next Auto OPEN if final status is CLOSED.
+     */
+    function updateCountdownDisplay() {
+        // Use Server Time adjusted to local machine for accurate countdown
+        const now = new Date(new Date().getTime() + serverTimeDelta); 
+        const countdownMsgEl = qs('#countdownMessage');
+        const displayEl = qs('#countdownDisplay');
+        const targetMsgEl = qs('#targetMessage');
+        const defaultMsgEl = qs('#defaultClosedMessage');
+
+        hide(countdownMsgEl);
+        
+        let targetDate = null;
+        let action = '';
+        
+        // Logic for which date is next (Only runs if isSystemOpenFinal is FALSE)
+        
+        // Case 1: System is closed, and opening is next (Auto Open)
+        // This is the primary countdown when the system is closed
+        if (autoOpenDateTarget && now.getTime() < autoOpenDateTarget.getTime()) {
+            targetDate = autoOpenDateTarget;
+            action = 'เปิดรับสมัคร';
+        }
+        // Case 2: System is open (e.g. within auto range but manual is OFF, or manual is ON)
+        // We only show countdown when the FINAL status is CLOSED.
+        // If final status is CLOSED, then Case 1 above should cover it.
+        // If final status is OPEN, the interval is cleared.
+        
+        // Reset default closed message content
+        defaultMsgEl.textContent = 'โปรดติดตามประกาศของโรงเรียนคุณธรรม สพฐ. โรงเรียนสตรีพัทลุง หรือติดต่อผู้ดูแลระบบหากมีข้อสงสัย';
+
+
+        if (targetDate) {
+            const msRemaining = targetDate.getTime() - now.getTime();
+            
+            if (msRemaining > 0) {
+                const targetDateOnly = formatDateOnly(targetDate);
+                const targetTimeOnly = formatTimeOnly(targetDate);
+
+                targetMsgEl.innerHTML = `ระบบจะ${action}ในวันที่ <span class="font-medium text-red-900">${targetDateOnly}</span> เวลา <span class="font-medium text-red-900">${targetTimeOnly}</span> น.`;
+                displayEl.textContent = formatCountdown(msRemaining);
+                
+                // Adjust the default message to reflect the automated status
+                defaultMsgEl.textContent = `โปรดติดตามประกาศของโรงเรียนคุณธรรม สพฐ. โรงเรียนสตรีพัทลุง หรือติดต่อผู้ดูแลระบบหากมีข้อสงสัย`;
+                
+                show(countdownMsgEl);
+            } else {
+                 // Time has passed, force an update check
+                 if (!isSystemOpenFinal) {
+                    db.doc(CONFIG_DOC).update({ _serverCheck: firebase.firestore.FieldValue.serverTimestamp() }).catch(err => console.error("Error refreshing server check:", err));
+                 }
+            }
+        }
+    }
+
+
+    /**
+     * Updates UI based on the system's open/closed status.
+     * (UPDATED LOGIC: Manual OPEN overrides Auto settings)
+     * @param {boolean} isOpenManually - The status from the manual toggle (config.isOpen).
+     * @param {object} configData - The full config object from Firestore.
+     * @param {Date|null} serverTime - The current server time (Date object) used for checks.
+     */
+    function updateSystemUI(isOpenManually, configData = {}, serverTime = null) {
+      const now = serverTime || new Date(); 
+      
+      // Firestore Timestamp objects are based on UTC. .toDate() converts them to local Date object (but still represents the UTC time).
+      const autoOpenDate = configData.autoOpenDate && configData.autoOpenDate.toDate ? configData.autoOpenDate.toDate() : null;
+      const autoCloseDate = configData.autoCloseDate && configData.autoCloseDate.toDate ? configData.autoCloseDate.toDate() : null;
+      
+      // Update global targets
+      autoOpenDateTarget = autoOpenDate;
+      autoCloseDateTarget = autoCloseDate;
+      
+      // Calculate delta for local countdown timer synchronization
+      serverTimeDelta = now.getTime() - new Date().getTime();
+      
+      let isWithinAutoDateRange = false; // Default to false if no auto dates are set or if outside range
+
+      if (autoOpenDate || autoCloseDate) {
+          if (autoOpenDate && autoCloseDate) {
+              isWithinAutoDateRange = now.getTime() >= autoOpenDate.getTime() && now.getTime() < autoCloseDate.getTime();
+          } else if (autoOpenDate) {
+              isWithinAutoDateRange = now.getTime() >= autoOpenDate.getTime();
+          } else if (autoCloseDate) {
+              isWithinAutoDateRange = now.getTime() < autoCloseDate.getTime();
+          }
+      } else {
+          // If no auto dates are set, and manual is OFF, the system should be CLOSED.
+          // Setting isWithinAutoDateRange to false is appropriate.
+      }
+      
+      // --- NEW LOGIC IMPLEMENTATION (Manual Override) ---
+      let finalStatus = isOpenManually; // Start with Manual status
+
+      // If Manual status is TRUE, finalStatus is TRUE (Override)
+      // If Manual status is FALSE, finalStatus depends on the Auto Date Range
+      if (!isOpenManually) {
+          finalStatus = isWithinAutoDateRange; // If Manual is OFF, use Auto status
+      }
+      
+      isSystemOpenManually = isOpenManually;
+      isSystemOpenFinal = finalStatus; 
+      // --- END NEW LOGIC ---
+
+      const form = qs('#applyForm');
+      const closedMsg = qs('#regisClosedMessage'); 
+      const loadingMsg = qs('#loadingStatusMessage');
+      const badge = qs('#systemStatusBadge');
+      const controlStatus = qs('#systemControlStatus');
+      const toggleBtn = qs('#toggleSystemBtn');
+      const autoDateStatus = qs('#autoDateStatus');
+      
+      // Update Public/Header Badge and Form visibility
+      if (finalStatus) {
+        badge.textContent = 'ระบบเปิดรับสมัคร';
+        badge.className = 'px-3 py-1 rounded-full text-sm bg-green-50 text-green-700 ring-1 ring-green-200';
+        // Apply Tab Control
+        if (form && closedMsg && loadingMsg) { hide(loadingMsg); show(form); hide(closedMsg); }
+        // Stop the countdown timer when open
+        clearInterval(window.__countdownInterval);
+      } else {
+        badge.textContent = 'ระบบปิดรับสมัคร';
+        badge.className = 'px-3 py-1 rounded-full text-sm bg-red-50 text-red-700 ring-1 ring-red-200';
+        // Apply Tab Control
+        if (form && closedMsg && loadingMsg) { hide(loadingMsg); hide(form); show(closedMsg); } 
+        // Start/Update the countdown timer when closed
+        updateCountdownDisplay();
+        if (!window.__countdownInterval) {
+           window.__countdownInterval = setInterval(updateCountdownDisplay, 1000); 
+        }
+      }
+
+      // Update Admin Control Panel (if visible)
+      if (controlStatus && toggleBtn) {
+        toggleBtn.disabled = false;
+        // Manual Toggle Status Display
+        if (isOpenManually) {
+          controlStatus.innerHTML = 'สถานะระบบด้วยตนเอง: <span class="font-bold text-green-600">เปิด</span>';
+          toggleBtn.textContent = 'ปิดระบบ';
+          toggleBtn.className = 'btn px-4 py-2 rounded-xl text-white font-medium bg-red-600 hover:bg-red-500 active:bg-red-700';
+        } else {
+          controlStatus.innerHTML = 'สถานะระบบด้วยตนเอง: <span class="font-bold text-red-600">ปิด</span>';
+          toggleBtn.textContent = 'เปิดระบบ';
+          toggleBtn.className = 'btn px-4 py-2 rounded-xl text-white font-medium bg-green-600 hover:bg-green-500 active:bg-green-700';
+        }
+        
+        // Admin Auto Date Control Status Display
+        if (autoDateStatus) {
+            let rangeStatus = 'ไม่มีกำหนดการอัตโนมัติ';
+            
+            if (isOpenManually) {
+                // [MODIFIED LOGIC] เมื่อเปิดด้วยตนเอง จะแสดงสถานะ "Override"
+                rangeStatus = `<span class="text-green-700 font-bold">เปิดด้วยตนเอง (Override)</span>: ระบบกำลังเปิดโดยไม่สนใจช่วงเวลาอัตโนมัติ`;
+                if (autoOpenDate || autoCloseDate) {
+                    const openTxt = autoOpenDate ? formatDateLocal(autoOpenDate) : 'ไม่มี';
+                    const closeTxt = autoCloseDate ? formatDateLocal(autoCloseDate) : 'ไม่มี';
+                    rangeStatus += ` (กำหนดการเดิม: เปิด ${openTxt} | ปิด ${closeTxt})`;
+                }
+            } else if (autoOpenDate || autoCloseDate) {
+                // เมื่อปิดด้วยตนเอง ค่อยแสดงสถานะช่วงเวลาปกติ
+                const openTxt = autoOpenDate ? formatDateLocal(autoOpenDate) : 'ไม่มีกำหนด';
+                const closeTxt = autoCloseDate ? formatDateLocal(autoCloseDate) : 'ไม่มีกำหนด';
+                
+                rangeStatus = `เปิด: ${openTxt} | ปิด: ${closeTxt}`;
+                if (!isWithinAutoDateRange) {
+                    rangeStatus = `<span class="text-red-700">อยู่นอกช่วงเวลาอัตโนมัติ:</span> ${rangeStatus}`;
+                } else {
+                    rangeStatus = `<span class="text-green-700">สถานะกำหนดการอัตโนมัติ:</span> ${rangeStatus}`;
+                }
+            }
+            autoDateStatus.innerHTML = `สถานะช่วงเวลา: ${rangeStatus}`;
+        }
+        
+        // Set Admin Date Inputs 
+        const openInput = qs('#autoOpenDateInput');
+        const closeInput = qs('#autoCloseDateInput');
+        if (openInput) openInput.value = autoOpenDate ? formatForDatetimeLocal(autoOpenDate) : ''; 
+        if (closeInput) closeInput.value = autoCloseDate ? formatForDatetimeLocal(autoCloseDate) : '';
+      }
+    }
+
+    /**
+     * Realtime listener for the system configuration status.
+     */
+    let configUnsub = null;
+    function checkSystemStatus() {
+      // ... (Loading state for Apply tab)
+      if (qs('#tab-apply') && !qs('#tab-apply').classList.contains('hidden')) {
+          show(qs('#loadingStatusMessage'));
+          hide(qs('#applyForm'));
+          hide(qs('#regisClosedMessage'));
+      }
+      
+      if (configUnsub) configUnsub();
+      
+      // 1. Force a server check timestamp update to get the latest server time
+      db.doc(CONFIG_DOC).set({ _serverCheck: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(err => console.error("Error setting server check:", err));
+
+      // 2. Listen to the document
+      configUnsub = db.doc(CONFIG_DOC).onSnapshot(doc => {
+        let isOpenManually = true; 
+        let configData = {};
+        let serverTime = null; 
+
+        if (doc.exists && doc.data()) {
+          configData = doc.data();
+          if (typeof configData.isOpen === 'boolean') {
+             isOpenManually = configData.isOpen;
+          }
+          // Get Server Time from the latest update
+          if (configData._serverCheck && configData._serverCheck.toDate) {
+              serverTime = configData._serverCheck.toDate();
+          } else if (configData.createdAt && configData.createdAt.toDate) {
+              serverTime = configData.createdAt.toDate();
+          }
+        } else {
+          db.doc(CONFIG_DOC).set({ 
+            isOpen: true, 
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            _serverCheck: firebase.firestore.FieldValue.serverTimestamp() 
+          }, { merge: true }).catch(err => console.error("Error setting initial config:", err));
+        }
+        
+        updateSystemUI(isOpenManually, configData, serverTime); 
+      }, err => {
+        console.error("Error reading system config:", err);
+        updateSystemUI(false, {}, null); 
+      });
+      
+      // 3. Set an interval to refresh server time check periodically (e.g., every 60 seconds)
+      clearInterval(window.__serverTimeInterval);
+      window.__serverTimeInterval = setInterval(() => {
+          db.doc(CONFIG_DOC).update({ _serverCheck: firebase.firestore.FieldValue.serverTimestamp() }).catch(err => console.error("Error refreshing server check:", err));
+      }, 60000); 
+    }
+
+    /**
+     * Toggles the system's open/closed status in Firestore (Manual Control).
+     */
+    qs('#toggleSystemBtn').addEventListener('click', async () => {
+      if (!window.__isAdmin) return;
+      const newStatus = !isSystemOpenManually; 
+      const action = newStatus ? 'เปิดระบบรับสมัครด้วยตนเอง' : 'ปิดระบบรับสมัครด้วยตนเอง';
+      
+      const confirmMsg = `คุณแน่ใจหรือไม่ที่จะ **${action}**?`;
+      if (!confirm(confirmMsg)) return;
+
+      const btn = qs('#toggleSystemBtn');
+      btn.disabled = true; btn.classList.add('opacity-60');
+
+      try {
+        await db.doc(CONFIG_DOC).update({ 
+            isOpen: newStatus, 
+            _serverCheck: firebase.firestore.FieldValue.serverTimestamp() 
+        });
+        toast(`${action} เรียบร้อยแล้ว`);
+      } catch (err) {
+        console.error("Error toggling system status:", err);
+        alert(`ไม่สามารถ ${action} ได้: ${err.message}`);
+      } finally {
+        btn.disabled = false; btn.classList.remove('opacity-60');
+      }
+    });
+
+    // --- END SYSTEM STATUS MANAGEMENT ---
+
+    // Tabs
+    function switchTab(tab){
+      const target = tab === 'dashboard' ? 'check-status' : tab || 'apply'; 
+      qsa('.tab-btn').forEach(b=>b.classList.remove('tab-active'));
+      qsa('[id^="tab-"]').forEach(s=>s.classList.add('hidden'));
+      const btn = qsa('.tab-btn').find(b=>b.dataset.tab===target);
+      if (btn) btn.classList.add('tab-active');
+      const pane = qs(`#tab-${target}`);
+      if (pane) pane.classList.remove('hidden');
+      try { history.replaceState(null, '', `#${target}`); } catch(_){}
+      if (pane) pane.scrollIntoView({behavior:'smooth', block:'start'});
+    }
+    function initTabs(){
+      qsa('.tab-btn').forEach(b=>{
+        b.addEventListener('click', (e)=>{ e.preventDefault(); switchTab(b.dataset.tab); }, {passive:false});
+      });
+      const initial = (location.hash || '#apply').replace('#','');
+      switchTab(initial);
+      window.addEventListener('hashchange', ()=> switchTab((location.hash||'#apply').replace('#','')));
+      checkSystemStatus(); 
+    }
+    if (document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', initTabs); }
+    else { initTabs(); }
+
+    // Rooms 1–12
+    function fillRooms(selectEl, includeAll=false){
+      selectEl.innerHTML = '';
+      const first = document.createElement('option');
+      first.value = ''; first.textContent = includeAll ? 'ทั้งหมด' : '— เลือกห้อง —';
+      selectEl.appendChild(first);
+      for (let i=1;i<=ROOMS.length;i++){
+        const o = document.createElement('option');
+        o.value = String(i); o.textContent = String(i);
+        selectEl.appendChild(o);
+      }
+    }
+    fillRooms(qs('#room'));
+
+    const adminRoom = qs('#adminRoom');
+
+    qs('#adminGrade').addEventListener('change', (e)=>{
+      const val = e.target.value;
+      if (!val){ adminRoom.innerHTML = '<option value="">ทั้งหมด</option>'; adminRoom.disabled = true; return; }
+      fillRooms(adminRoom, true); adminRoom.disabled = false;
+      if (window.__isAdmin) attachAdminListener();
+    });
+
+    // Apply form
+    qs('#applyForm').addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      
+      // Check if system is open before proceeding
+      if (!isSystemOpenFinal) { // Check final status
+        showError('ระบบรับสมัครปิดอยู่');
+        return;
+      }
+
+      const submitBtn = qs('#submitBtn');
+      submitBtn.disabled = true; submitBtn.classList.add('opacity-70');
+
+      const studentId = qs('#studentId').value.trim(); 
+      const grade = qs('#grade').value.trim();
+      const room = qs('#room').value.trim();
+      const prefix = qs('#prefix').value.trim();
+      const firstName = qs('#firstName').value.trim();
+      const lastName = qs('#lastName').value.trim();
+      const nickname = qs('#nickname').value.trim();
+      const phone = qs('#phone').value.trim();
+      const msg = qs('#applyMessage'); hide(msg); msg.className='mt-4 hidden';
+
+      if(!studentId || !grade || !room || !prefix || !firstName || !lastName || !nickname || !phone){
+        submitBtn.disabled=false; submitBtn.classList.remove('opacity-70');
+        showError('กรุณากรอกข้อมูลให้ครบถ้วน'); return;
+      }
+      if(!/^[0-9]{5}$/.test(studentId)){ 
+        submitBtn.disabled=false; submitBtn.classList.remove('opacity-70');
+        showError('รหัสนักเรียนต้องเป็นตัวเลข 5 หลัก'); return;
+      }
+      if(!/^[0-9]{9,10}$/.test(phone)){
+        submitBtn.disabled=false; submitBtn.classList.remove('opacity-70');
+        showError('เบอร์โทรต้องเป็นตัวเลข 9–10 หลัก'); return;
+      }
+      
+      // ตรวจสอบการสมัครซ้ำจาก studentId
+      const existingApp = await db.collection(COL).where('studentId', '==', studentId).limit(1).get();
+      if (!existingApp.empty) {
+        submitBtn.disabled=false; submitBtn.classList.remove('opacity-70');
+        showError('รหัสนักเรียนนี้ได้ทำการสมัครไปแล้ว'); return;
+      }
+
+
+      try {
+        const ref = await db.collection(COL).add({
+          studentId, 
+          grade, room, prefix, firstName, lastName, nickname, phone,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        await ref.update({ _confirmedAt: firebase.firestore.FieldValue.serverTimestamp() });
+        toast('ส่งข้อมูลสำเร็จ ขอบคุณค่ะ/ครับ');
+        e.target.reset();
+        fillRooms(qs('#room'));
+      } catch (err){
+        console.error(err);
+        showError('ไม่สามารถบันทึกข้อมูลได้ กรุณาลองใหม่');
+      } finally {
+        submitBtn.disabled=false; submitBtn.classList.remove('opacity-70');
+      }
+    });
+    function showError(text){
+      const el = qs('#applyMessage');
+      el.className='mt-4 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700';
+      el.textContent = text; show(el);
+    }
+
+    // --- CHECK STATUS (Dashboard replacement) ---
+
+    qs('#checkStatusForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const studentId = qs('#checkStudentId').value.trim();
+      const checkResult = qs('#checkResult');
+      const statusFound = qs('#statusFound');
+      const statusNotFound = qs('#statusNotFound');
+      const checkEmpty = qs('#checkEmpty');
+
+      hide(checkEmpty);
+      hide(statusFound);
+      hide(statusNotFound);
+      show(checkResult);
+
+      if (!/^[0-9]{5}$/.test(studentId)) {
+        qs('#checkStudentId').focus();
+        show(statusNotFound); 
+        setText(statusNotFound.querySelector('p:last-child'), 'รหัสนักเรียนต้องเป็นตัวเลข 5 หลัก');
+        return;
+      }
+      setText(statusNotFound.querySelector('p:last-child'), 'โปรดตรวจสอบรหัสนักเรียน 5 หลักอีกครั้ง หรือติดต่อผู้ดูแลระบบ');
+
+      const btn = qs('#checkStatusBtn');
+      btn.disabled = true; btn.classList.add('opacity-60');
+
+      try {
+        const snap = await db.collection(COL).where('studentId', '==', studentId).limit(1).get();
+        
+        if (snap.empty) {
+          show(statusNotFound);
+        } else {
+          const doc = snap.docs[0];
+          const d = doc.data();
+
+          setText(qs('#res_studentId'), d.studentId);
+          setText(qs('#res_fullName'), `${d.prefix||''}${d.firstName||''} ${d.lastName||''}`);
+          setText(qs('#res_nickname'), d.nickname || '-');
+          setText(qs('#res_gradeRoom'), `${d.grade||'-'}/${d.room||'-'}`);
+          setText(qs('#res_phone'), d.phone || '-');
+          setText(qs('#res_createdAt'), formatDate(d.createdAt));
+
+          show(statusFound);
+        }
+
+      } catch (err) {
+        console.error("Error checking status:", err);
+        show(statusNotFound);
+        setText(statusNotFound.querySelector('p:last-child'), `เกิดข้อผิดพลาดในการตรวจสอบ: ${err.message}`);
+      } finally {
+        btn.disabled = false; btn.classList.remove('opacity-60');
+      }
+    });
+
+    // --- END CHECK STATUS ---
+
+
+    // Admin auth + panel
+    function updateAdminUI(user){
+      if (user && ADMIN_EMAILS.includes(user.email)){
+        window.__isAdmin = true;
+        hide(qs('#adminLogin')); show(qs('#adminPanel'));
+        setText(qs('#adminStatus'), `เข้าสู่ระบบแล้ว: ${user.email}`);
+        attachAdminListener();
+        updateSystemUI(isSystemOpenManually, {}, null); 
+      } else {
+        window.__isAdmin = false;
+        show(qs('#adminLogin')); hide(qs('#adminPanel'));
+        setText(qs('#adminStatus'), '');
+        if (adminUnsub){ adminUnsub(); adminUnsub=null; }
+      }
+    }
+    auth.onAuthStateChanged(updateAdminUI);
+    qs('#loginForm').addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const email = qs('#loginEmail').value.trim();
+      const password = qs('#loginPassword').value.trim();
+      const btn = qs('#loginBtn');
+      const msg = qs('#loginMsg');
+      btn.disabled = true; btn.classList.add('opacity-60'); msg.classList.add('hidden');
+      try{
+        await auth.signInWithEmailAndPassword(email, password);
+        toast('เข้าสู่ระบบสำเร็จ');
+      } catch(err){
+        msg.textContent = 'เข้าสู่ระบบไม่สำเร็จ โปรดตรวจสอบอีเมลหรือรหัสผ่าน';
+        msg.classList.remove('hidden');
+      } finally {
+        btn.disabled = false; btn.classList.remove('opacity-60');
+      }
+    });
+    qs('#logoutBtn').addEventListener('click', async ()=>{ await auth.signOut(); toast('ออกจากระบบแล้ว'); });
+
+    // ฟังก์ชันสำหรับแสดงผลสรุปรายห้องใน Admin Panel
+    // ฟังก์ชันสำหรับแสดงผลสรุปรายห้องใน Admin Panel (แก้ไขเพิ่มแถวรวม)
+    // ฟังก์ชันสำหรับแสดงผลสรุปรายห้องใน Admin Panel (แก้ไข: รวมยอดรายชั้นปีไว้ด้านขวา)
+    // ฟังก์ชันสำหรับแสดงผลสรุปรายห้องใน Admin Panel (แก้ไข: มีแถวสรุปยอดรวมท้ายตาราง)
+    function renderAdminSummaryTable(docs) {
+      const counts = {}; 
+      
+      // 1. นับจำนวนผู้สมัครในแต่ละห้อง
+      docs.forEach(doc => {
+        const d = doc.data();
+        const grade = d.grade;
+        const room = d.room;
+        if (grade && room && GRADES.includes(grade) && ROOMS.includes(room)) {
+          if (!counts[grade]) counts[grade] = {};
+          counts[grade][room] = (counts[grade][room] || 0) + 1;
+        }
+      });
+      
+      const header = qs('#adminSummaryHeader');
+      const subHeader = qs('#adminSummarySubHeader');
+      const body = qs('#adminSummaryBody');
+      
+      // Reset Table
+      header.innerHTML = '<th class="py-2 px-3 border-r border-gray-200" rowspan="2">ชั้น</th>';
+      subHeader.innerHTML = '';
+      body.innerHTML = '';
+      
+      // 2. สร้าง Header สำหรับตาราง (Room 1 - Room 12)
+      ROOMS.forEach(room => {
+        const th = document.createElement('th');
+        th.colSpan = 2;
+        th.className = 'py-2 px-3 border-r border-gray-200';
+        th.textContent = `ห้อง ${room}`;
+        header.appendChild(th);
+
+        subHeader.innerHTML += `<th class="py-2 px-1 text-xs font-normal">สมัคร</th><th class="py-2 px-1 text-xs font-normal border-r border-gray-200">ขาด</th>`;
+      });
+
+      // สร้าง Header สำหรับยอดรวมด้านขวาสุด (รายระดับชั้น)
+      const thTotal = document.createElement('th');
+      thTotal.colSpan = 2;
+      thTotal.className = 'py-2 px-3 bg-gray-100 text-gray-800 font-bold border-l-2 border-gray-300';
+      thTotal.textContent = 'รวมทั้งระดับชั้น';
+      header.appendChild(thTotal);
+      
+      subHeader.innerHTML += `<th class="py-2 px-1 text-xs font-bold bg-gray-50 border-l-2 border-gray-300">รวมสมัคร</th><th class="py-2 px-1 text-xs font-bold bg-gray-50">รวมขาด</th>`;
+
+      // ตัวแปรสำหรับเก็บยอดรวม "ทั้งโรงเรียน" (Grand Total)
+      let grandAllCount = 0;
+      let grandAllMissing = 0;
+
+      // 3. สร้าง Body สำหรับตาราง (Grade 1 - 6)
+      GRADES.forEach(grade => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-gray-50';
+        tr.innerHTML = `<td class="py-3 px-3 font-semibold text-gray-800 border-r border-gray-200">${grade}</td>`;
+        
+        let gradeTotalCount = 0; 
+        let gradeTotalMissing = 0;
+
+        ROOMS.forEach(room => {
+          const count = counts[grade] ? (counts[grade][room] || 0) : 0;
+          const needed = Math.max(0, CAPACITY - count); 
+          
+          gradeTotalCount += count;
+          gradeTotalMissing += needed;
+
+          let countClass = 'font-medium';
+          let neededClass = 'font-medium';
+
+          if (count >= CAPACITY) {
+            neededClass = 'text-red-600 font-bold'; 
+            countClass = 'text-emerald-600 font-bold'; 
+          } else if (count > 0) {
+            neededClass = 'text-yellow-600 font-medium'; 
+          } else {
+            neededClass = 'text-gray-500 font-medium'; 
+          }
+
+          tr.innerHTML += `
+            <td class="py-3 px-1 ${countClass}">${count}</td>
+            <td class="py-3 px-1 ${neededClass} border-r border-gray-200">${needed}</td>
+          `;
+        });
+
+        // แสดงผลรวมที่ท้ายแถว (รายระดับชั้น)
+        tr.innerHTML += `
+            <td class="py-3 px-1 font-bold text-primary-700 bg-gray-50 border-l-2 border-gray-300">${gradeTotalCount}</td>
+            <td class="py-3 px-1 font-bold text-gray-600 bg-gray-50">${gradeTotalMissing}</td>
+        `;
+
+        // สะสมเข้ายอดรวมทั้งโรงเรียน
+        grandAllCount += gradeTotalCount;
+        grandAllMissing += gradeTotalMissing;
+
+        body.appendChild(tr);
+      });
+
+      // --- ส่วนที่เพิ่มใหม่: แถวสรุปยอดรวมทั้งหมด (Grand Total) ---
+      const totalTr = document.createElement('tr');
+      totalTr.className = 'bg-gray-100 font-bold text-gray-900 border-t-2 border-gray-400';
+      
+      // คำนวณจำนวนคอลัมน์ที่จะ Merge (Colspan) = 1 (ช่องชื่อชั้น) + (จำนวนห้อง * 2)
+      // เพื่อให้ข้อความ "รวมยอดทั้งหมดทุกระดับชั้น" กินพื้นที่ไปจนถึงก่อนช่องรวม
+      const spanCount = 1 + (ROOMS.length * 2);
+
+      totalTr.innerHTML = `
+        <td colspan="${spanCount}" class="py-3 px-4 text-right border-r border-gray-300 text-gray-700">รวมยอดทั้งหมดทุกระดับชั้น</td>
+        <td class="py-3 px-1 text-primary-800 text-lg border-l-2 border-gray-300">${grandAllCount}</td>
+        <td class="py-3 px-1 text-gray-700 text-lg">${grandAllMissing}</td>
+      `;
+
+      body.appendChild(totalTr);
+      
+      show(qs('#adminSummaryTable'));
+    }
+
+
+    // Admin list
+    let adminUnsub = null;
+    function queryAdmin(){
+      let ref = db.collection(COL);
+      const g = qs('#adminGrade').value;
+      const r = qs('#adminRoom').value;
+      if (g) ref = ref.where('grade','==', g);
+      if (r) ref = ref.where('room','==', r);
+      return ref;
+    }
+    function attachAdminListener(){
+      if (!window.__isAdmin) return;
+      if (adminUnsub){ adminUnsub(); adminUnsub=null; }
+      
+      adminUnsub = db.collection(COL).onSnapshot(allSnap=>{
+        const allDocs = allSnap.docs;
+        
+        // 1. คำนวณและอัปเดตสรุปรายห้อง (ใช้ข้อมูลทั้งหมด)
+        renderAdminSummaryTable(allDocs); 
+
+        // 2. กรองข้อมูลตามที่เลือกใน Dropdown (Admin Grade/Room) เพื่อแสดงรายการด้านล่าง
+        let docs = allDocs;
+        const gFilter = qs('#adminGrade').value;
+        const rFilter = qs('#adminRoom').value;
+        if (gFilter) docs = docs.filter(doc => doc.data().grade === gFilter);
+        if (rFilter) docs = docs.filter(doc => doc.data().room === rFilter);
+        
+        // ส่วนการแสดงรายการที่ถูกกรอง (Docs filtered)
+        const sorted = docs.slice().sort((a,b)=>{
+          const ta = (a.data().createdAt && a.data().createdAt.toMillis) ? a.data().createdAt.toMillis() : 0;
+          const tb = (b.data().createdAt && b.data().createdAt.toMillis) ? b.data().createdAt.toMillis() : 0;
+          return tb - ta; // desc
+        });
+        const tbody = qs('#adminList'); tbody.innerHTML = '';
+        if (!docs.length){ setText(qs('#adminEmpty'),'ยังไม่มีข้อมูลแสดง'); } else { hide(qs('#adminEmpty')); }
+        
+        sorted.forEach(doc=>{
+          const d = doc.data();
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td class="py-3 pr-4 font-mono text-sm">${d.studentId||'-'}</td>
+            <td class="py-3 pr-4">${d.grade||''}</td>
+            <td class="py-3 pr-4">${d.room||''}</td>
+            <td class="py-3 pr-4">${d.prefix||''}</td>
+            <td class="py-3 pr-4">${d.firstName||''}</td>
+            <td class="py-3 pr-4">${d.lastName||''}</td>
+            <td class="py-3 pr-4">${d.nickname||''}</td>
+            <td class="py-3 pr-4">${d.phone||''}</td>
+            <td class="py-3 pr-4">${formatDate(d.createdAt)}</td>
+            <td class="py-3 pr-4">
+              <div class="flex gap-2">
+                <button class="btn px-3 py-1 rounded-lg bg-gray-100 hover:bg-gray-200" data-action="edit" data-id="${doc.id}">แก้ไข</button>
+                <button class="btn px-3 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-white" data-action="delete" data-id="${doc.id}">ลบ</button>
+              </div>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }, err=> console.error(err));
+    }
+    qs('#loadAllBtn').addEventListener('click', attachAdminListener);
+    qs('#adminRoom').addEventListener('change', attachAdminListener);
+
+    // ฟังก์ชันสำหรับล้างข้อมูลทั้งหมดใน Firestore
+    async function deleteAllApplications(collectionRef) {
+      if (!window.__isAdmin) return false;
+      const batchSize = 100; 
+      let totalDeleted = 0;
+      
+      try {
+          while (true) {
+              const snapshot = await collectionRef.limit(batchSize).get();
+              if (snapshot.size === 0) break; 
+              
+              const batch = db.batch();
+              snapshot.docs.forEach(doc => {
+                  batch.delete(doc.ref);
+              });
+
+              await batch.commit();
+              totalDeleted += snapshot.size;
+              console.log(`Deleted ${snapshot.size} documents in a batch. Total: ${totalDeleted}`);
+              await new Promise(resolve => setTimeout(resolve, 50)); 
+          }
+          return totalDeleted;
+      } catch (error) {
+          console.error("Error deleting documents:", error);
+          throw error;
+      }
+    }
+
+    // Event Listener สำหรับปุ่มล้างข้อมูลทั้งหมด
+    qs('#clearAllBtn').addEventListener('click', async ()=>{
+      if (!window.__isAdmin){ alert('ต้องเป็นผู้ดูแลเท่านั้น'); return; }
+
+      const confirmText = 'คุณยืนยันที่จะ **ลบข้อมูลผู้สมัครทั้งหมด** ออกจากฐานข้อมูลหรือไม่? การดำเนินการนี้ไม่สามารถย้อนกลับได้ พิมพ์ "CONFIRM DELETE" เพื่อยืนยัน';
+      const userInput = prompt(confirmText);
+      
+      if (userInput !== 'CONFIRM DELETE') {
+        if (userInput !== null) {
+            alert('การยืนยันไม่ถูกต้อง การลบถูกยกเลิก');
+        }
+        return;
+      }
+
+      const btn = qs('#clearAllBtn');
+      btn.disabled = true; btn.classList.add('opacity-60');
+      
+      try {
+        const deletedCount = await deleteAllApplications(db.collection(COL));
+        toast(`ลบข้อมูลทั้งหมดสำเร็จ! (${deletedCount} รายการ)`);
+        attachAdminListener(); 
+      } catch(err){ 
+        console.error(err); 
+        alert('ลบข้อมูลทั้งหมดไม่สำเร็จ โปรดตรวจสอบ Console/Log'); 
+      } finally {
+        btn.disabled = false; btn.classList.remove('opacity-60');
+      }
+    });
+
+    // Admin table actions
+    qs('#adminList').addEventListener('click', async (e)=>{
+      if (!window.__isAdmin){ alert('ต้องเป็นผู้ดูแลเท่านั้น'); return; }
+      const btn = e.target.closest('button'); if (!btn) return;
+      const id = btn.dataset.id; const action = btn.dataset.action;
+      if (action === 'delete'){
+        const ok = confirm('ยืนยันการลบข้อมูลนี้หรือไม่?'); if (!ok) return;
+        try { await db.collection(COL).doc(id).delete(); toast('ลบข้อมูลแล้ว'); }
+        catch(err){ console.error(err); alert('ลบไม่สำเร็จ'); }
+      }
+      if (action === 'edit'){ openEditModal(id); }
+    });
+
+    // Edit modal
+    function openEditModal(id){
+      db.collection(COL).doc(id).get().then(doc=>{
+        if (!doc.exists) return;
+        const d = doc.data();
+        qs('#editId').value = doc.id;
+        qs('#editStudentId').value = d.studentId || '';
+        qs('#editGrade').value = d.grade || 'ม.1';
+        fillRooms(qs('#editRoom')); qs('#editRoom').value = d.room || '';
+        qs('#editPrefix').value = d.prefix || 'นาย';
+        qs('#editFirstName').value = d.firstName || '';
+        qs('#editLastName').value = d.lastName || '';
+        qs('#editNickname').value = d.nickname || '';
+        qs('#editPhone').value = d.phone || '';
+        const m = qs('#editModal'); m.classList.remove('hidden'); m.classList.add('flex');
+      });
+    }
+    function closeEdit(){ const m = qs('#editModal'); m.classList.add('hidden'); m.classList.remove('flex'); }
+    qs('#closeEditModal').addEventListener('click', closeEdit);
+    qs('#cancelEdit').addEventListener('click', (e)=>{ e.preventDefault(); closeEdit(); });
+    qs('#editForm').addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const id = qs('#editId').value;
+      const data = {
+        studentId: qs('#editStudentId').value.trim(), 
+        grade: qs('#editGrade').value,
+        room: qs('#editRoom').value,
+        prefix: qs('#editPrefix').value,
+        firstName: qs('#editFirstName').value.trim(),
+        lastName: qs('#editLastName').value.trim(),
+        nickname: qs('#editNickname').value.trim(),
+        phone: qs('#editPhone').value.trim(),
+      };
+      if (!/^[0-9]{5}$/.test(data.studentId)){ alert('รหัสนักเรียนต้องเป็นตัวเลข 5 หลัก'); return; }
+      if (!/^[0-9]{9,10}$/.test(data.phone)){ alert('เบอร์โทรต้องเป็นตัวเลข 9–10 หลัก'); return; }
+
+      // ตรวจสอบรหัสนักเรียนซ้ำกับคนอื่น
+      const existingApp = await db.collection(COL).where('studentId', '==', data.studentId).limit(1).get();
+      if (!existingApp.empty && existingApp.docs[0].id !== id) {
+          alert('รหัสนักเรียนนี้มีผู้สมัครอื่นใช้งานอยู่แล้ว');
+          return;
+      }
+      
+      try { await db.collection(COL).doc(id).update(data); toast('บันทึกการแก้ไขแล้ว'); closeEdit(); }
+      catch(err){ console.error(err); alert('แก้ไขไม่สำเร็จ'); }
+    });
+
+    // CSV helpers
+    function toCSVRow(values){
+      return values.map(v=>{
+        if (v==null) v='';
+        v = String(v).replace(/"/g,'""');
+        if (v.includes(',') || v.includes('"') || v.includes('\n')) return `"${v}"`;
+        return v;
+      }).join(',');
+    }
+    function downloadCSV(filename, rows){
+      try {
+        const csv = rows.join('\n');
+        const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'}); 
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 0);
+      } catch(err){
+        console.error(err);
+        alert('ไม่สามารถสร้างไฟล์ CSV ได้');
+      }
+    }
+
+    // Export filtered (admin)
+    qs('#exportBtn').addEventListener('click', async ()=>{
+      if (!window.__isAdmin){ alert('ต้องเป็นผู้ดูแลเท่านั้น'); return; }
+      try {
+        const snap = await queryAdmin().get();
+        const docs = snap.docs.slice().sort((a,b)=>{
+          const ta = (a.data().createdAt && a.data().createdAt.toMillis) ? a.data().createdAt.toMillis() : 0;
+          const tb = (b.data().createdAt && b.data().createdAt.toMillis) ? b.data().createdAt.toMillis() : 0;
+          return tb - ta;
+        });
+        const headers = ['รหัสนักเรียน','ชั้น','ห้อง','คำนำหน้า','ชื่อ','นามสกุล','ชื่อเล่น','โทรศัพท์','เวลา','DocID'];
+        const rows = [toCSVRow(headers)];
+        docs.forEach(doc=>{
+          const d = doc.data();
+          rows.push(toCSVRow([d.studentId||'', d.grade||'', d.room||'', d.prefix||'', d.firstName||'', d.lastName||'', d.nickname||'', d.phone||'', formatDate(d.createdAt), doc.id]));
+        });
+        downloadCSV('SPT-Moral-Applications-Filtered.csv', rows);
+        toast('ส่งออกไฟล์ CSV แล้ว');
+      } catch(err){ console.error(err); alert('ส่งออกไม่สำเร็จ'); }
+    });
+
+    // Export all (admin)
+    qs('#exportAllBtn').addEventListener('click', async ()=>{
+      if (!window.__isAdmin){ alert('ต้องเป็นผู้ดูแลเท่านั้น'); return; }
+      try {
+        const snap = await db.collection(COL).get();
+        const docs = snap.docs.slice().sort((a,b)=>{
+          const ta = (a.data().createdAt && a.data().createdAt.toMillis) ? a.data().createdAt.toMillis() : 0;
+          const tb = (b.data().createdAt && b.data().createdAt.toMillis) ? b.data().createdAt.toMillis() : 0;
+          return tb - ta;
+        });
+        const headers = ['รหัสนักเรียน','ชั้น','ห้อง','คำนำหน้า','ชื่อ','นามสกุล','ชื่อเล่น','โทรศัพท์','เวลา','DocID'];
+        const rows = [toCSVRow(headers)];
+        docs.forEach(doc=>{
+          const d = doc.data();
+          rows.push(toCSVRow([d.studentId||'', d.grade||'', d.room||'', d.prefix||'', d.firstName||'', d.lastName||'', d.nickname||'', d.phone||'', formatDate(d.createdAt), doc.id]));
+        });
+        downloadCSV('SPT-Moral-Applications-All.csv', rows);
+        toast('ส่งออกทั้งหมดเป็น CSV แล้ว');
+      } catch(err){ console.error(err); alert('ส่งออกไม่สำเร็จ'); }
+    });
+    
+    // --- ADMIN AUTO DATE CONTROL LOGIC ---
+    
+    // Function to clear auto dates
+    qs('#clearAutoDateBtn').addEventListener('click', async () => {
+        if (!window.__isAdmin) return;
+        if (!confirm('ยืนยันที่จะล้างวันที่เปิด/ปิดอัตโนมัติหรือไม่?')) return;
+        
+        const btn = qs('#clearAutoDateBtn');
+        btn.disabled = true; btn.classList.add('opacity-60');
+        
+        try {
+            await db.doc(CONFIG_DOC).update({ 
+                autoOpenDate: firebase.firestore.FieldValue.delete(), 
+                autoCloseDate: firebase.firestore.FieldValue.delete() ,
+                _serverCheck: firebase.firestore.FieldValue.serverTimestamp() 
+            });
+            toast('ล้างวันที่อัตโนมัติแล้ว');
+        } catch (err) {
+            console.error("Error clearing auto dates:", err);
+            alert(`ไม่สามารถล้างวันที่อัตโนมัติได้: ${err.message}`);
+        } finally {
+            btn.disabled = false; btn.classList.remove('opacity-60');
+        }
+    });
+
+    // Function to save auto dates
+    qs('#autoControlForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!window.__isAdmin) return;
+        
+        const openDateStr = qs('#autoOpenDateInput').value;
+        const closeDateStr = qs('#autoCloseDateInput').value;
+        
+        if (!openDateStr && !closeDateStr) {
+            alert('กรุณาเลือกวันที่เปิดหรือวันที่ปิดอย่างน้อยหนึ่งค่า');
+            return;
+        }
+
+        // The datetime-local input value represents a time string assumed to be in the client's local time.
+        // When creating a Date object from this string, the browser interprets it using the client's local timezone.
+        // Firestore's Timestamp.fromDate() then converts this local Date object back to a UTC timestamp.
+        
+        const openDate = openDateStr ? new Date(openDateStr) : null;
+        const closeDate = closeDateStr ? new Date(closeDateStr) : null;
+
+        if (openDate && isNaN(openDate.getTime())) { alert('รูปแบบวันที่เปิดไม่ถูกต้อง'); return; }
+        if (closeDate && isNaN(closeDate.getTime())) { alert('รูปแบบวันที่ปิดไม่ถูกต้อง'); return; }
+
+        if (openDate && closeDate && openDate.getTime() >= closeDate.getTime()) {
+            alert('วันที่เปิดอัตโนมัติต้องอยู่ก่อนวันที่ปิดอัตโนมัติ');
+            return;
+        }
+
+        const btn = qs('#saveAutoDateBtn');
+        btn.disabled = true; btn.classList.add('opacity-60');
+        
+        try {
+            const updateData = {
+                autoOpenDate: openDate ? firebase.firestore.Timestamp.fromDate(openDate) : firebase.firestore.FieldValue.delete(),
+                autoCloseDate: closeDate ? firebase.firestore.Timestamp.fromDate(closeDate) : firebase.firestore.FieldValue.delete(),
+                _serverCheck: firebase.firestore.FieldValue.serverTimestamp() 
+            };
+            
+            await db.doc(CONFIG_DOC).update(updateData);
+            toast('บันทึกวันที่อัตโนมัติแล้ว');
+        } catch (err) {
+            console.error("Error saving auto dates:", err);
+            alert(`ไม่สามารถบันทึกวันที่อัตโนมัติได้: ${err.message}`);
+        } finally {
+            btn.disabled = false; btn.classList.remove('opacity-60');
+        }
+    });
+
+    // --- END ADMIN AUTO DATE CONTROL LOGIC ---
+    
+  </script>
+</body>
+</html>
